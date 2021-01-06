@@ -25,6 +25,11 @@ from .transformer_head import TransformerHead
 from .vfnet_head import VFNetHead
 from .yolact_head import YOLACTHead, YOLACTProtonet, YOLACTSegmHead
 from .yolo_head import YOLOV3Head
+from .gfl_head_unshare import GFLHeadUnshare
+from .gfl_head_unshare_p3 import GFLHeadUnshareP3
+from .gfl_head_unshare_p3_bn import GFLHeadUnshareP3BN
+from .atss_head_check import ATSSHeadCheck
+from .fcos_head_check import FCOSHeadCheck
 
 __all__ = [
     'AnchorFreeHead', 'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption',
@@ -33,5 +38,7 @@ __all__ = [
     'FreeAnchorRetinaHead', 'ATSSHead', 'FSAFHead', 'NASFCOSHead',
     'PISARetinaHead', 'PISASSDHead', 'GFLHead', 'CornerHead', 'YOLACTHead',
     'YOLACTSegmHead', 'YOLACTProtonet', 'YOLOV3Head', 'PAAHead',
-    'SABLRetinaHead', 'CentripetalHead', 'VFNetHead', 'TransformerHead'
+    'SABLRetinaHead', 'CentripetalHead', 'VFNetHead', 'TransformerHead',
+    'GFLHeadUnshare', 'GFLHeadUnshareP3', 'GFLHeadUnshareP3BN', 'ATSSHeadCheck', 'FCOSHeadCheck'
+    
 ]
