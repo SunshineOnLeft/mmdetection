@@ -89,13 +89,20 @@ def cityscapes_classes():
     ]
 
 
+def tianchi_classes():
+    return [
+        "边异常", "角异常", "白色点瑕疵", "浅色块瑕疵", "深色点块瑕疵", "光圈瑕疵"
+    ]
+
+
 dataset_aliases = {
     'voc': ['voc', 'pascal_voc', 'voc07', 'voc12'],
     'imagenet_det': ['det', 'imagenet_det', 'ilsvrc_det'],
     'imagenet_vid': ['vid', 'imagenet_vid', 'ilsvrc_vid'],
     'coco': ['coco', 'mscoco', 'ms_coco'],
     'wider_face': ['WIDERFaceDataset', 'wider_face', 'WDIERFace'],
-    'cityscapes': ['cityscapes']
+    'cityscapes': ['cityscapes'],
+    'tianchi': ['tianchi']
 }
 
 

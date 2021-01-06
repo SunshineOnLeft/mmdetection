@@ -20,16 +20,16 @@ model = dict(
         type='RPNHead',
         in_channels=256,
         feat_channels=256,
-        anchor_generator=dict(
-            type='AnchorGenerator',
-            scales=[8],
-            ratios=[0.5, 1.0, 2.0],
-            strides=[4, 8, 16, 32, 64]),
         # anchor_generator=dict(
         #     type='AnchorGenerator',
-        #     scales=[1],
+        #     scales=[8],
         #     ratios=[0.5, 1.0, 2.0],
         #     strides=[4, 8, 16, 32, 64]),
+        anchor_generator=dict(
+            type='AnchorGenerator',
+            scales=[1],
+            ratios=[0.5, 1.0, 2.0],
+            strides=[4, 8, 16, 32, 64]),
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
@@ -198,7 +198,7 @@ train_pipeline = [
     #     crop_type='relative_range'),
     dict(
         type='Resize', 
-        img_scale=(2666, 1600),
+        img_scale=(1333, 976),
         keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
@@ -210,7 +210,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(2666, 1600),
+        img_scale=(1333, 976),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
@@ -227,26 +227,26 @@ dataset_type = 'TianChiDataset'
 data_root = '../tianchi_data/tile_round1_train_20201231/'
 data = dict(
     samples_per_gpu=2,
-    workers_per_gpu=2,
+    workers_per_gpu=0,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'train_annos_4_ratio8.json',
+        ann_file=data_root + 'train_annos_a_r1.json',
         img_prefix=data_root + 'train_imgs/',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'train_annos_4_ratio8.json',
+        ann_file=data_root + 'train_annos_a_r1.json',
         img_prefix=data_root + 'train_imgs/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'train_annos_4_ratio8.json',
+        ann_file=data_root + 'train_annos_a_r1.json',
         img_prefix=data_root + 'train_imgs/',
         pipeline=test_pipeline))
-evaluation = dict(interval=5, metric='bbox')
+evaluation = dict(interval=1, metric='bbox')
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
@@ -254,13 +254,13 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=0.001,
-    step=[160, 220])
-total_epochs = 240
+    step=[8, 11])
+total_epochs = 12
 
-checkpoint_config = dict(interval=20)
+checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=1,
+    interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
@@ -271,22 +271,3 @@ log_level = 'INFO'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
-# ---------------------------------------------------------------------- #
-data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=0,
-    train=dict(
-        type=dataset_type,
-        ann_file=data_root + 'train_annos_4.json',
-        img_prefix=data_root + 'train_imgs/',
-        pipeline=train_pipeline),
-    val=dict(
-        type=dataset_type,
-        ann_file=data_root + 'train_annos_4.json',
-        img_prefix=data_root + 'train_imgs/',
-        pipeline=test_pipeline),
-    test=dict(
-        type=dataset_type,
-        ann_file=data_root + 'train_annos_4.json',
-        img_prefix=data_root + 'train_imgs/',
-        pipeline=test_pipeline))

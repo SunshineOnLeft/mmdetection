@@ -3,47 +3,31 @@ model = dict(
     type='CascadeRCNN',
     pretrained='torchvision://resnet50',
     backbone=dict(
-        type='DetectoRS_ResNet',
+        type='ResNet',
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        style='pytorch',
-        conv_cfg=dict(type='ConvAWS'),
-        sac=dict(type='SAC', use_deform=True),
-        stage_with_sac=(False, True, True, True),
-        output_img=True),
+        style='pytorch'),
     neck=dict(
-        type='RFP',
+        type='FPN',
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
-        num_outs=5,
-        rfp_steps=2,
-        aspp_out_channels=64,
-        aspp_dilations=(1, 3, 6, 1),
-        rfp_backbone=dict(
-            rfp_inplanes=256,
-            type='DetectoRS_ResNet',
-            depth=50,
-            num_stages=4,
-            out_indices=(0, 1, 2, 3),
-            frozen_stages=1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            norm_eval=True,
-            conv_cfg=dict(type='ConvAWS'),
-            sac=dict(type='SAC', use_deform=True),
-            stage_with_sac=(False, True, True, True),
-            pretrained='torchvision://resnet50',
-            style='pytorch')),
+        num_outs=5),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
         feat_channels=256,
+        # anchor_generator=dict(
+        #     type='AnchorGenerator',
+        #     scales=[8],
+        #     ratios=[0.5, 1.0, 2.0],
+        #     strides=[4, 8, 16, 32, 64]),
         anchor_generator=dict(
             type='AnchorGenerator',
-            scales=[8],
+            scales=[1],
             ratios=[0.5, 1.0, 2.0],
             strides=[4, 8, 16, 32, 64]),
         bbox_coder=dict(
@@ -119,7 +103,7 @@ train_cfg = dict(
     rpn=dict(
         assigner=dict(
             type='MaxIoUAssigner',
-            pos_iou_thr=0.7,
+            pos_iou_thr=0.5,
             neg_iou_thr=0.3,
             min_pos_iou=0.3,
             match_low_quality=True,
@@ -144,41 +128,41 @@ train_cfg = dict(
         dict(
             assigner=dict(
                 type='MaxIoUAssigner',
+                pos_iou_thr=0.3,
+                neg_iou_thr=0.3,
+                min_pos_iou=0.3,
+                match_low_quality=False,
+                ignore_iof_thr=-1),
+            sampler=dict(
+                type='RandomSampler',
+                num=512,
+                pos_fraction=0.25,
+                neg_pos_ub=-1,
+                add_gt_as_proposals=True),
+            pos_weight=-1,
+            debug=False),
+        dict(
+            assigner=dict(
+                type='MaxIoUAssigner',
+                pos_iou_thr=0.4,
+                neg_iou_thr=0.4,
+                min_pos_iou=0.4,
+                match_low_quality=False,
+                ignore_iof_thr=-1),
+            sampler=dict(
+                type='RandomSampler',
+                num=512,
+                pos_fraction=0.25,
+                neg_pos_ub=-1,
+                add_gt_as_proposals=True),
+            pos_weight=-1,
+            debug=False),
+        dict(
+            assigner=dict(
+                type='MaxIoUAssigner',
                 pos_iou_thr=0.5,
                 neg_iou_thr=0.5,
                 min_pos_iou=0.5,
-                match_low_quality=False,
-                ignore_iof_thr=-1),
-            sampler=dict(
-                type='RandomSampler',
-                num=512,
-                pos_fraction=0.25,
-                neg_pos_ub=-1,
-                add_gt_as_proposals=True),
-            pos_weight=-1,
-            debug=False),
-        dict(
-            assigner=dict(
-                type='MaxIoUAssigner',
-                pos_iou_thr=0.6,
-                neg_iou_thr=0.6,
-                min_pos_iou=0.6,
-                match_low_quality=False,
-                ignore_iof_thr=-1),
-            sampler=dict(
-                type='RandomSampler',
-                num=512,
-                pos_fraction=0.25,
-                neg_pos_ub=-1,
-                add_gt_as_proposals=True),
-            pos_weight=-1,
-            debug=False),
-        dict(
-            assigner=dict(
-                type='MaxIoUAssigner',
-                pos_iou_thr=0.7,
-                neg_iou_thr=0.7,
-                min_pos_iou=0.7,
                 match_low_quality=False,
                 ignore_iof_thr=-1),
             sampler=dict(
@@ -208,7 +192,14 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=(1333, 976), keep_ratio=True),
+    # dict(
+    #     type='RandomCrop',
+    #     crop_size=[0.5, 0.5],
+    #     crop_type='relative_range'),
+    dict(
+        type='Resize', 
+        img_scale=(1333, 976),
+        keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -233,26 +224,26 @@ test_pipeline = [
 
 dataset_type = 'TianChiDataset'
 # data_root = 'data/coco/'
-data_root = './data/tile_round1_train_20201231/'
+data_root = '../tianchi_data/tile_round1_train_20201231/'
 data = dict(
     samples_per_gpu=2,
-    workers_per_gpu=2,
+    workers_per_gpu=0,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'train_annos_coco.json',
+        ann_file=data_root + 'train_annos_8_r1.json',
         img_prefix=data_root + 'train_imgs/',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'train_annos_coco.json',
+        ann_file=data_root + 'train_annos_8_r1.json',
         img_prefix=data_root + 'train_imgs/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'train_annos_coco.json',
+        ann_file=data_root + 'train_annos_8_r1.json',
         img_prefix=data_root + 'train_imgs/',
         pipeline=test_pipeline))
-evaluation = dict(interval=1, metric='bbox')
+evaluation = dict(interval=5, metric='bbox')
 
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
@@ -263,13 +254,13 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=0.001,
-    step=[8, 11])
-total_epochs = 12
+    step=[160, 220])
+total_epochs = 240
 
-checkpoint_config = dict(interval=1)
+checkpoint_config = dict(interval=20)
 # yapf:disable
 log_config = dict(
-    interval=50,
+    interval=1,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
@@ -280,5 +271,3 @@ log_level = 'INFO'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
-
-
