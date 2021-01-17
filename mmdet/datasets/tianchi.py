@@ -395,6 +395,8 @@ class TianChiDataset(CustomDataset):
         if iou_thrs is None:
             iou_thrs = np.linspace(
                 .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
+        else:
+            iou_thrs = np.array(iou_thrs)
         if metric_items is not None:
             if not isinstance(metric_items, list):
                 metric_items = [metric_items]
@@ -440,6 +442,8 @@ class TianChiDataset(CustomDataset):
             # mapping of cocoEval.stats
             coco_metric_names = {
                 'mAP': 0,
+                'mAP_10': 12,
+                'mAP_30': 13,
                 'mAP_50': 1,
                 'mAP_75': 2,
                 'mAP_s': 3,
@@ -522,10 +526,12 @@ class TianChiDataset(CustomDataset):
                         f'{cocoEval.stats[coco_metric_names[metric_item]]:.3f}'
                     )
                     eval_results[key] = val
-                ap = cocoEval.stats[:6]
+                # ap = cocoEval.stats[:6]
+                # eval_results[f'{metric}_mAP_copypaste'] = (
+                #     f'{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
+                #     f'{ap[4]:.3f} {ap[5]:.3f}')
                 eval_results[f'{metric}_mAP_copypaste'] = (
-                    f'{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
-                    f'{ap[4]:.3f} {ap[5]:.3f}')
+                    f'{cocoEval.stats[0]:.3f} {cocoEval.stats[12]:.3f} {cocoEval.stats[13]:.3f} {cocoEval.stats[1]:.3f}')
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results

@@ -55,5 +55,5 @@ class BaseDenseHead(nn.Module, metaclass=ABCMeta):
         if proposal_cfg is None:
             return losses
         else:
-            proposal_list = self.get_bboxes(*outs, img_metas, cfg=proposal_cfg)
+            proposal_list = self.get_bboxes(*outs, img_metas, cfg=proposal_cfg, gt_bboxes=gt_bboxes)
             return losses, proposal_list

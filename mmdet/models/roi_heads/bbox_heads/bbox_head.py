@@ -7,6 +7,7 @@ from torch.nn.modules.utils import _pair
 from mmdet.core import build_bbox_coder, multi_apply, multiclass_nms
 from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.losses import accuracy
+from plot import roi_loss_save_images, roi_test_proposal_save_images
 
 
 @HEADS.register_module()
@@ -87,6 +88,7 @@ class BBoxHead(nn.Module):
         num_pos = pos_bboxes.size(0)
         num_neg = neg_bboxes.size(0)
         num_samples = num_pos + num_neg
+        # print("roi: num_pos = %d    num_neg = %d" %(num_pos, num_neg))
 
         # original implementation uses new_zeros since BG are set to be 0
         # now use empty & fill because BG cat_id = num_classes,
@@ -147,7 +149,24 @@ class BBoxHead(nn.Module):
              label_weights,
              bbox_targets,
              bbox_weights,
+             gt_bboxes=None, 
+             img_metas=None,
+             stage=None,
              reduction_override=None):
+
+        # # rank, _ = get_dist_info()
+        # # if self.if_save_image and rank == 0 and self.iteration % self.save_interval == 0:
+        if 1:
+            roi_loss_save_images(
+                img_metas, 
+                cls_score,
+                bbox_pred,
+                rois,
+                labels,
+                gt_bboxes,
+                self.bbox_coder,
+                stage)
+
         losses = dict()
         if cls_score is not None:
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
@@ -193,7 +212,9 @@ class BBoxHead(nn.Module):
                    img_shape,
                    scale_factor,
                    rescale=False,
-                   cfg=None):
+                   cfg=None,
+                   img_metas=None):
+
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
         scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
@@ -215,6 +236,15 @@ class BBoxHead(nn.Module):
                 bboxes = (bboxes.view(bboxes.size(0), -1, 4) /
                           scale_factor).view(bboxes.size()[0], -1)
 
+        # # rank, _ = get_dist_info()
+        # # if self.if_save_image and rank == 0 and self.iteration % self.save_interval == 0:
+        if 1:
+            roi_test_proposal_save_images(
+                img_metas, 
+                scores,
+                bboxes,
+                gt_bboxes=None)
+                
         if cfg is None:
             return bboxes, scores
         else:

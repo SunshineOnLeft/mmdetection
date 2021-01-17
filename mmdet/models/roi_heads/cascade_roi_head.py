@@ -7,6 +7,7 @@ from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
 from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
+from plot import roi_test_get_bbox_after_nms_save_images
 
 
 @HEADS.register_module()
@@ -151,7 +152,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         return bbox_results
 
     def _bbox_forward_train(self, stage, x, sampling_results, gt_bboxes,
-                            gt_labels, rcnn_train_cfg):
+                            gt_labels, rcnn_train_cfg, img_metas=None):
         """Run forward function and calculate loss for box head in training."""
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(stage, x, rois)
@@ -159,7 +160,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             sampling_results, gt_bboxes, gt_labels, rcnn_train_cfg)
         loss_bbox = self.bbox_head[stage].loss(bbox_results['cls_score'],
                                                bbox_results['bbox_pred'], rois,
-                                               *bbox_targets)
+                                               *bbox_targets, 
+                                               gt_bboxes, img_metas, stage)
 
         bbox_results.update(
             loss_bbox=loss_bbox, rois=rois, bbox_targets=bbox_targets)
@@ -256,7 +258,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             # bbox head forward and loss
             bbox_results = self._bbox_forward_train(i, x, sampling_results,
                                                     gt_bboxes, gt_labels,
-                                                    rcnn_train_cfg)
+                                                    rcnn_train_cfg, img_metas)
 
             for name, value in bbox_results['loss_bbox'].items():
                 losses[f's{i}.{name}'] = (
@@ -287,7 +289,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         return losses
 
-    def simple_test(self, x, proposal_list, img_metas, rescale=False):
+    def simple_test(self, x, proposal_list, img_metas, rescale=False, gt_bboxes=None):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
         num_imgs = len(proposal_list)
@@ -345,9 +347,19 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 img_shapes[i],
                 scale_factors[i],
                 rescale=rescale,
-                cfg=rcnn_test_cfg)
+                cfg=rcnn_test_cfg,
+                img_metas=img_metas)
             det_bboxes.append(det_bbox)
             det_labels.append(det_label)
+
+        # # rank, _ = get_dist_info()
+        # # if self.if_save_image and rank == 0 and self.iteration % self.save_interval == 0:
+        if 1:
+            roi_test_get_bbox_after_nms_save_images(
+                img_metas, 
+                det_bboxes,
+                det_labels,
+                gt_bboxes)
 
         if torch.onnx.is_in_onnx_export():
             return det_bboxes, det_labels

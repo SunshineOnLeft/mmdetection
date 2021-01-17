@@ -366,6 +366,8 @@ class ResNet(nn.Module):
                  in_channels=3,
                  stem_channels=None,
                  base_channels=64,
+                 conv1_setting=(7, 2, 3),
+                 use_maxpool=True,
                  num_stages=4,
                  strides=(1, 2, 2, 2),
                  dilations=(1, 1, 1, 1),
@@ -390,6 +392,8 @@ class ResNet(nn.Module):
             stem_channels = base_channels
         self.stem_channels = stem_channels
         self.base_channels = base_channels
+        self.conv1_setting = conv1_setting
+        self.use_maxpool = use_maxpool
         self.num_stages = num_stages
         assert num_stages >= 1 and num_stages <= 4
         self.strides = strides
@@ -560,9 +564,9 @@ class ResNet(nn.Module):
                 self.conv_cfg,
                 in_channels,
                 stem_channels,
-                kernel_size=7,
-                stride=2,
-                padding=3,
+                kernel_size=self.conv1_setting[0],
+                stride=self.conv1_setting[1],
+                padding=self.conv1_setting[2],
                 bias=False)
             self.norm1_name, norm1 = build_norm_layer(
                 self.norm_cfg, stem_channels, postfix=1)
@@ -625,10 +629,11 @@ class ResNet(nn.Module):
         if self.deep_stem:
             x = self.stem(x)
         else:
-            x = self.conv1(x)
+            x = self.conv1(x) # 1/2
             x = self.norm1(x)
             x = self.relu(x)
-        x = self.maxpool(x)
+        if self.use_maxpool:
+            x = self.maxpool(x) # 1/4
         outs = []
         for i, layer_name in enumerate(self.res_layers):
             res_layer = getattr(self, layer_name)

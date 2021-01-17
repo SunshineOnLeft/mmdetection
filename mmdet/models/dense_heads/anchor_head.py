@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
-from mmcv.runner import force_fp32
+from mmcv.runner import force_fp32, get_dist_info
 
 from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         build_assigner, build_bbox_coder, build_sampler,
@@ -9,6 +9,7 @@ from mmdet.core import (anchor_inside_flags, build_anchor_generator,
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
+from plot import rpn_loss_save_images, rpn_get_bbox_save_images
 
 
 @HEADS.register_module()
@@ -465,6 +466,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
          num_total_pos, num_total_neg) = cls_reg_targets
         num_total_samples = (
             num_total_pos + num_total_neg if self.sampling else num_total_pos)
+        # print("rpn: num_total_pos = %d    num_total_neg = %d" %(num_total_pos, num_total_neg))
 
         # anchor number of multi levels
         num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
@@ -474,6 +476,18 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             concat_anchor_list.append(torch.cat(anchor_list[i]))
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
+
+        # rank, _ = get_dist_info()
+        # if self.if_save_image and rank == 0 and self.iteration % self.save_interval == 0:
+        if 1:
+            rpn_loss_save_images(
+                img_metas, 
+                cls_scores,
+                bbox_preds,
+                all_anchor_list,
+                labels_list,
+                gt_bboxes,
+                self.bbox_coder)
 
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
@@ -494,7 +508,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                    img_metas,
                    cfg=None,
                    rescale=False,
-                   with_nms=True):
+                   with_nms=True,
+                   gt_bboxes=None):
         """Transform network output for a batch into bbox predictions.
 
         Args:
@@ -576,6 +591,15 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                                     scale_factor, cfg, rescale,
                                                     with_nms)
             result_list.append(proposals)
+
+        # rank, _ = get_dist_info()
+        # if self.if_save_image and rank == 0 and self.iteration % self.save_interval == 0:
+        if 1:
+            rpn_get_bbox_save_images(
+                img_metas, 
+                result_list,
+                gt_bboxes)
+    
         return result_list
 
     def _get_bboxes_single(self,
